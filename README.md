@@ -12,8 +12,8 @@ La misma base de código está diseñada para Android, iOS, Windows, Linux, macO
 ## Cómo ejecutar
 
 ```bash
-git clone <url-del-repositorio>
-cd Practica_SQLite
+git clone https://github.com/DannyyLC/SQLite_Mobiles.git
+cd SQLite_Mobiles
 flutter pub get
 flutter analyze
 flutter test
