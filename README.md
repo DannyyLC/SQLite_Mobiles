@@ -2,6 +2,38 @@
 
 **Código base deliberadamente incompleto.** Su objetivo es ofrecer una pantalla Flutter que se pueda ejecutar desde el primer momento; **NO implementa SQLite, CRUD ni persistencia**.
 
+## Decisiones de diseño
+
+### Tecnología de persistencia: Drift + drift_flutter
+
+| Paquete | Versión | Uso |
+|---|---|---|
+| `drift` | ^2.35.4 | ORM sobre SQLite: define tablas en Dart y genera consultas con tipos verificados. |
+| `drift_flutter` | ^0.3.1 | Abre la base de datos con la configuración adecuada para cada plataforma. |
+| `drift_dev` (dev) | ^2.35.3 | Generador de código de Drift (clases de filas, companions, DAO). |
+| `build_runner` (dev) | ^2.17.1 | Ejecuta el generador: `dart run build_runner build --delete-conflicting-outputs`. |
+
+Razones de la elección:
+
+- **Una sola base de código para las seis plataformas.** `drift_flutter` usa SQLite nativo en Android, iOS, Windows, Linux y macOS, y SQLite compilado a WebAssembly en el navegador. La capa de datos no cambia entre plataformas.
+- **SQLite real y local.** No hay servidor, API REST ni MySQL, y no se usa `shared_preferences`. Los datos se quedan en cada instalación.
+- **Tipos verificados.** Las tablas y consultas se escriben en Dart, así que los errores de columna o de tipo aparecen al compilar y no en tiempo de ejecución.
+- **Consultas reactivas.** Drift puede devolver una consulta como `Stream` que vuelve a emitir resultados después de cada `INSERT`, `UPDATE` o `DELETE`, y la interfaz se actualiza sin volver a consultar manualmente.
+
+Se descartó `sqflite` porque en web, Windows y Linux necesita paquetes adicionales (`sqflite_common_ffi`, `sqflite_common_ffi_web`), lo que duplica la configuración.
+
+### Tabla `tareas`
+
+| Columna | Tipo en Dart (Drift) | Tipo en SQLite | Restricciones |
+|---|---|---|---|
+| `id` | `int` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |
+| `titulo` | `String` | `TEXT` | `NOT NULL`; longitud ≥ 1 después de quitar espacios |
+| `completada` | `bool` | `INTEGER` (0/1) | `NOT NULL`, `DEFAULT 0` |
+
+- **Identificación:** cada registro se identifica por `id`, que asigna SQLite al insertar. La edición, el cambio de estado y la eliminación se hacen por `id`.
+- **Booleano:** SQLite no tiene tipo booleano. Drift guarda `completada` como 0 o 1 y la convierte a `bool` automáticamente.
+- **Validación:** el título se limpia con `trim()` antes de guardarlo. Si queda vacío, la tarea no se registra.
+
 ## Preparación
 
 1. Instala Flutter y comprueba `flutter doctor -v`.
