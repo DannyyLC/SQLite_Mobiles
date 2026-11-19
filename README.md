@@ -1,6 +1,49 @@
-# Práctica - Gestor de tareas SQLite multiplataforma
+# Gestor de tareas con SQLite multiplataforma
 
-**Código base deliberadamente incompleto.** Su objetivo es ofrecer una pantalla Flutter que se pueda ejecutar desde el primer momento; **NO implementa SQLite, CRUD ni persistencia**.
+Aplicación Flutter que administra tareas en una base de datos **SQLite local**, sin servidor ni conexión a internet. Permite agregar, listar, editar el título, marcar como completada o pendiente y eliminar tareas. Las tareas se conservan entre ejecuciones.
+
+La misma base de código está diseñada para Android, iOS, Windows, Linux, macOS y web. Los datos no se sincronizan entre dispositivos: cada instalación (o cada origen y perfil del navegador) tiene su propia base.
+
+## Requisitos
+
+- Flutter 3.47 / Dart 3.13 o compatible (`flutter doctor -v`).
+- Para la versión nativa en Linux: las dependencias de escritorio que indique `flutter doctor`.
+
+## Cómo ejecutar
+
+```bash
+git clone <url-del-repositorio>
+cd Practica_SQLite
+flutter pub get
+flutter analyze
+flutter test
+```
+
+**Escritorio (Linux):**
+
+```bash
+flutter run -d linux
+```
+
+**Web:**
+
+```bash
+flutter run -d chrome
+```
+
+> `flutter run -d chrome` abre Chrome con un **perfil temporal** que se borra al terminar la sesión. Recargar la página (R) conserva los datos, pero una nueva ejecución de `flutter run` empieza vacía. Para comprobar la persistencia en web (P6), sirve la app en un puerto fijo y ábrela en tu Chrome normal:
+>
+> ```bash
+> flutter build web
+> python3 -m http.server 8080 -d build/web
+> # abrir http://127.0.0.1:8080
+> ```
+
+El código generado por Drift (`lib/data/database.g.dart`) está incluido en el repositorio. Solo hay que regenerarlo si cambia la tabla:
+
+```bash
+dart run build_runner build
+```
 
 ## Decisiones de diseño
 
@@ -10,7 +53,7 @@
 |---|---|---|
 | `drift` | ^2.35.4 | ORM sobre SQLite: define tablas en Dart y genera consultas con tipos verificados. |
 | `drift_flutter` | ^0.3.1 | Abre la base de datos con la configuración adecuada para cada plataforma. |
-| `drift_dev` (dev) | ^2.35.3 | Generador de código de Drift (clases de filas, companions, DAO). |
+| `drift_dev` (dev) | ^2.35.3 | Generador de código de Drift (tabla, companions, clase base de la base de datos). |
 | `build_runner` (dev) | ^2.17.1 | Ejecuta el generador: `dart run build_runner build` (en 2.17 la opción `--delete-conflicting-outputs` ya no existe y se ignora). |
 
 Razones de la elección:
@@ -27,56 +70,39 @@ Se descartó `sqflite` porque en web, Windows y Linux necesita paquetes adiciona
 | Columna | Tipo en Dart (Drift) | Tipo en SQLite | Restricciones |
 |---|---|---|---|
 | `id` | `int` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` |
-| `titulo` | `String` | `TEXT` | `NOT NULL`; longitud ≥ 1 después de quitar espacios |
-| `completada` | `bool` | `INTEGER` (0/1) | `NOT NULL`, `DEFAULT 0` |
+| `titulo` | `String` | `TEXT` | `NOT NULL`, `CHECK(LENGTH(TRIM(titulo)) >= 1)` |
+| `completada` | `bool` | `INTEGER` (0/1) | `NOT NULL`, `DEFAULT 0`, `CHECK(completada IN (0, 1))` |
 
-- **Identificación:** cada registro se identifica por `id`, que asigna SQLite al insertar. La edición, el cambio de estado y la eliminación se hacen por `id`.
+- **Identificación:** cada registro se identifica por `id`, que asigna SQLite al insertar. La edición, el cambio de estado y la eliminación se hacen por `id`. Si el `id` ya no existe, la operación lanza `TareaNoEncontradaException`.
 - **Booleano:** SQLite no tiene tipo booleano. Drift guarda `completada` como 0 o 1 y la convierte a `bool` automáticamente.
-- **Validación:** el título se limpia con `trim()` antes de guardarlo. Si queda vacío, la tarea no se registra.
+- **Validación en dos niveles:** en Dart, `validarTitulo()` aplica `trim()` y rechaza títulos vacíos con un mensaje para el usuario. En SQLite, el `CHECK` impide guardar un título vacío aunque se salte la validación de Dart.
 
-## Preparación
+## Pruebas automatizadas
 
-1. Instala Flutter y comprueba `flutter doctor -v`.
-2. Crea un proyecto nuevo **con este nombre**, para que coincida el `package:` usado en la prueba inicial:
+```bash
+flutter test
+```
 
-   ```bash
-   flutter create gestor_tareas_local
-   cd gestor_tareas_local
-   ```
+Todas las pruebas usan SQLite real, en memoria o en un archivo temporal, y no tocan la base de la app.
 
-3. Copia al proyecto generado las carpetas `lib/` y `test/` de esta base. No sobrescribas las carpetas `android/`, `ios/`, `web/`, `windows/`, `linux/` ni `macos/` generadas por Flutter.
-4. Ejecuta:
+| Archivo | Qué cubre |
+|---|---|
+| `test/database_test.dart` | `validarTitulo` limpia espacios y rechaza títulos vacíos. INSERT y SELECT. Rechazo de títulos vacíos al insertar y al editar. El `CHECK` de SQLite como segunda barrera. UPDATE de título y de estado, y DELETE por `id`. Excepción con un `id` inexistente. El `Stream` vuelve a emitir tras cada escritura. **Persistencia:** escribe en un archivo, cierra la base, la vuelve a abrir y comprueba los cambios de P1 a P4. |
+| `test/widget_test.dart` | La pantalla inicial se muestra. Un título vacío muestra el aviso y no se registra (P5). Agregar desde la interfaz guarda la tarea y la muestra en la lista. |
 
-   ```bash
-   flutter pub get
-   flutter analyze
-   flutter test
-   flutter run -d chrome
-   ```
+## Plataformas y resultados
 
-   Sustituye `chrome` por otro identificador de `flutter devices` si lo necesitas.
+| Plataforma | Estado |
+|---|---|
+| Linux (escritorio) | Probada |
+| Web (Chrome) | Probada (compilación release servida en `127.0.0.1:8080`) |
+| Android, iOS, Windows, macOS | Previstas, no probadas. El código no tiene nada específico de plataforma: `drift_flutter` resuelve la conexión en cada una. iOS y macOS requieren una Mac con Xcode, y Windows requiere Windows. |
 
-## Tarea por realizar
-
-- Persistencia SQLite real en Android, iOS, Windows, Linux, macOS y web.
-- Agregar, listar, editar título, marcar completada y eliminar tareas.
-- Comprobar que la información persiste después de cerrar/abrir la app y, en web, después de recargar/cerrar la pestaña en un mismo origen y perfil.
-- Investigar Drift + drift_flutter para compartir una sola base de código entre plataformas.
-- Investigar cómo agregar `sqlite3.wasm` y `drift_worker.dart.js` en `web/` para que la base funcione en el navegador.
-- Añadir pruebas significativas y documentar las plataformas verificadas.
-
-Consulta la consigna PDF/LaTeX: contiene pasos de investigación, criterios, evidencias y rúbrica.
-
-## Notas
-
-- **No uses una base MySQL ni API REST:** esta práctica es de almacenamiento **local**.
-- **No se acepta una lista solo en memoria** ni guardar la lista como JSON en `shared_preferences` en lugar de SQLite.
-- Los datos de cada instalación/plataforma son propios; no se exige sincronización entre dispositivos.
-- iOS y macOS requieren una Mac para compilarse/probarse; Windows requiere Windows para compilarse y Linux, Linux. La compatibilidad del código sí debe contemplar las seis plataformas.
-
-### Referencias recomendadas
-
-- https://drift.simonbinder.eu/
-- https://drift.simonbinder.eu/platforms/web/
-- https://pub.dev/packages/drift_flutter
-- https://docs.flutter.dev/data-and-backend/persistence/sqlite
+| ID | Prueba | Linux | Web |
+|---|---|---|---|
+| P1 | Agregar tres tareas, cerrar y abrir | Correcta | Correcta |
+| P2 | Marcar completada y reiniciar | Correcta | Correcta |
+| P3 | Cambiar título y reiniciar | Correcta | Correcta |
+| P4 | Eliminar y reiniciar | Correcta | Correcta |
+| P5 | Agregar título vacío | Correcta | Correcta |
+| P6 | Recargar y cerrar/abrir la pestaña (mismo origen y perfil) | No aplica | Correcta |

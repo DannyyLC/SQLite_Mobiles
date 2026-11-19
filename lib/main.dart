@@ -7,10 +7,9 @@ void main() {
   runApp(const GestorTareasApp());
 }
 
-/// Punto de entrada de la aplicación.
-/// Crea una única instancia de la base de datos y la cierra al desmontarse.
+/// Abre la base una vez y la cierra al salir.
 class GestorTareasApp extends StatefulWidget {
-  /// Permite inyectar una base distinta (p. ej. en memoria para pruebas).
+  /// Base opcional para pruebas.
   final AppDatabase? database;
 
   const GestorTareasApp({super.key, this.database});

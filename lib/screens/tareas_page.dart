@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/database.dart';
 import '../models/tarea.dart';
 
-// Pantalla de tareas: alta, consulta, edición, cambio de estado y eliminación,
-// todas persistentes en SQLite mediante AppDatabase.
+// Pantalla principal con el CRUD de tareas.
 class TareasPage extends StatefulWidget {
   final AppDatabase database;
 
@@ -16,8 +15,9 @@ class TareasPage extends StatefulWidget {
 
 class _TareasPageState extends State<TareasPage> {
   final TextEditingController _tituloController = TextEditingController();
+  final FocusNode _tituloFocus = FocusNode();
 
-  /// Se crea una sola vez: build() solo escucha el Stream, no consulta la base.
+  /// Se crea una vez; build() solo lo escucha.
   late final Stream<List<Tarea>> _tareasStream;
 
   @override
@@ -26,8 +26,7 @@ class _TareasPageState extends State<TareasPage> {
     _tareasStream = widget.database.observarTareas();
   }
 
-  /// Ejecuta una operación de la base y convierte cualquier error en un
-  /// mensaje comprensible. Devuelve `true` si la operación tuvo éxito.
+  /// Ejecuta una operación y muestra los errores al usuario.
   Future<bool> _ejecutar(
     Future<void> Function() operacion,
     String accion,
@@ -51,6 +50,8 @@ class _TareasPageState extends State<TareasPage> {
       'guardar la tarea',
     );
     if (ok) _tituloController.clear();
+    // Mantiene el foco para capturar otra tarea.
+    _tituloFocus.requestFocus();
   }
 
   Future<void> _alternarCompletada(Tarea tarea, bool completada) async {
@@ -110,6 +111,7 @@ class _TareasPageState extends State<TareasPage> {
   @override
   void dispose() {
     _tituloController.dispose();
+    _tituloFocus.dispose();
     super.dispose();
   }
 
@@ -124,6 +126,7 @@ class _TareasPageState extends State<TareasPage> {
           children: [
             TextField(
               controller: _tituloController,
+              focusNode: _tituloFocus,
               decoration: const InputDecoration(
                 labelText: 'Nueva tarea',
                 border: OutlineInputBorder(),
@@ -212,7 +215,7 @@ class _TareasPageState extends State<TareasPage> {
   }
 }
 
-/// Diálogo para editar el título. No permite guardar un título vacío.
+/// Diálogo para editar el título.
 class _EditarTituloDialog extends StatefulWidget {
   final String tituloInicial;
 

@@ -6,7 +6,7 @@ import 'package:gestor_tareas_local/main.dart';
 
 void main() {
   testWidgets('La pantalla inicial se muestra sin errores', (tester) async {
-    // Base SQLite en memoria: las pruebas no tocan la base real de la app.
+    // Base en memoria, no toca la real.
     final database = AppDatabase(NativeDatabase.memory());
 
     await tester.pumpWidget(GestorTareasApp(database: database));
@@ -14,7 +14,46 @@ void main() {
     expect(find.text('Agregar tarea'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
 
-    // Desmontar la app cierra la base y cancela el Stream de consultas.
+    // Desmontar cierra la base.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Un título vacío muestra aviso y no se registra (P5)', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    await tester.pumpWidget(GestorTareasApp(database: database));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '    ');
+    await tester.tap(find.text('Agregar tarea'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('El título de la tarea no puede estar vacío.'),
+      findsOneWidget,
+    );
+    expect(find.text('Todavía no hay tareas guardadas'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('Agregar desde la interfaz guarda y muestra la tarea', (
+    tester,
+  ) async {
+    final database = AppDatabase(NativeDatabase.memory());
+    await tester.pumpWidget(GestorTareasApp(database: database));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '  Entregar práctica ');
+    await tester.tap(find.text('Agregar tarea'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Entregar práctica'), findsOneWidget);
+    expect(find.text('Todavía no hay tareas guardadas'), findsNothing);
+
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
   });
