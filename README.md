@@ -11,7 +11,7 @@
 | `drift` | ^2.35.4 | ORM sobre SQLite: define tablas en Dart y genera consultas con tipos verificados. |
 | `drift_flutter` | ^0.3.1 | Abre la base de datos con la configuración adecuada para cada plataforma. |
 | `drift_dev` (dev) | ^2.35.3 | Generador de código de Drift (clases de filas, companions, DAO). |
-| `build_runner` (dev) | ^2.17.1 | Ejecuta el generador: `dart run build_runner build --delete-conflicting-outputs`. |
+| `build_runner` (dev) | ^2.17.1 | Ejecuta el generador: `dart run build_runner build` (en 2.17 la opción `--delete-conflicting-outputs` ya no existe y se ignora). |
 
 Razones de la elección:
 

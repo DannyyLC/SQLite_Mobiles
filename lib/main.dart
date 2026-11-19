@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'data/database.dart';
 import 'screens/tareas_page.dart';
 
 void main() {
@@ -6,9 +8,25 @@ void main() {
 }
 
 /// Punto de entrada de la aplicación.
-/// La configuración del almacenamiento se agregará como parte de la tarea.
-class GestorTareasApp extends StatelessWidget {
-  const GestorTareasApp({super.key});
+/// Crea una única instancia de la base de datos y la cierra al desmontarse.
+class GestorTareasApp extends StatefulWidget {
+  /// Permite inyectar una base distinta (p. ej. en memoria para pruebas).
+  final AppDatabase? database;
+
+  const GestorTareasApp({super.key, this.database});
+
+  @override
+  State<GestorTareasApp> createState() => _GestorTareasAppState();
+}
+
+class _GestorTareasAppState extends State<GestorTareasApp> {
+  late final AppDatabase _database = widget.database ?? AppDatabase();
+
+  @override
+  void dispose() {
+    _database.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +37,7 @@ class GestorTareasApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const TareasPage(),
+      home: TareasPage(database: _database),
     );
   }
 }
