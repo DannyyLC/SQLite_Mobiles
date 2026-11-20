@@ -25,6 +25,12 @@ flutter test
 flutter run -d linux
 ```
 
+**Móvil (Android):** conecta un dispositivo con depuración USB o inicia un emulador y usa su identificador de `flutter devices`.
+
+```bash
+flutter run -d <id-del-dispositivo>
+```
+
 **Web:**
 
 ```bash
@@ -92,17 +98,20 @@ Todas las pruebas usan SQLite real, en memoria o en un archivo temporal, y no to
 
 ## Plataformas y resultados
 
-| Plataforma | Estado |
-|---|---|
-| Linux (escritorio) | Probada |
-| Web (Chrome) | Probada (compilación release servida en `127.0.0.1:8080`) |
-| Android, iOS, Windows, macOS | Previstas, no probadas. El código no tiene nada específico de plataforma: `drift_flutter` resuelve la conexión en cada una. iOS y macOS requieren una Mac con Xcode, y Windows requiere Windows. |
+Se probó en los tres entornos requeridos: web, móvil y escritorio.
 
-| ID | Prueba | Linux | Web |
-|---|---|---|---|
-| P1 | Agregar tres tareas, cerrar y abrir | Correcta | Correcta |
-| P2 | Marcar completada y reiniciar | Correcta | Correcta |
-| P3 | Cambiar título y reiniciar | Correcta | Correcta |
-| P4 | Eliminar y reiniciar | Correcta | Correcta |
-| P5 | Agregar título vacío | Correcta | Correcta |
-| P6 | Recargar y cerrar/abrir la pestaña (mismo origen y perfil) | No aplica | Correcta |
+| Entorno | Plataforma | Estado |
+|---|---|---|
+| Web | Chrome | Probada (compilación release servida en `127.0.0.1:8080`) |
+| Móvil | Android | Probada |
+| Escritorio | Linux | Probada |
+| Otras | iOS, Windows, macOS | Previstas, no probadas. `drift_flutter` resuelve la conexión en cada una; iOS y macOS requieren una Mac con Xcode, y Windows requiere Windows. |
+
+| ID | Prueba | Web | Android | Linux |
+|---|---|---|---|---|
+| P1 | Agregar tres tareas, cerrar y abrir | Correcta | Correcta | Correcta |
+| P2 | Marcar completada y reiniciar | Correcta | Correcta | Correcta |
+| P3 | Cambiar título y reiniciar | Correcta | Correcta | Correcta |
+| P4 | Eliminar y reiniciar | Correcta | Correcta | Correcta |
+| P5 | Agregar título vacío | Correcta | Correcta | Correcta |
+| P6 | Recargar y cerrar/abrir la pestaña (mismo origen y perfil) | Correcta | No aplica | No aplica |
